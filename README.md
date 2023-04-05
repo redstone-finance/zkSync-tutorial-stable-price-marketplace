@@ -12,10 +12,10 @@ This document will cover:
 
 RedStone is a data ecosystem that delivers frequently updated, reliable and diverse data for your dApps and smart contracts.
 
-It uses a radically different way of putting oracle data on-chain:
+It uses a radically different way of putting oracles data on-chain:
 
 - RedStone data providers need to sign provided data and broadcast it using the decentralized [Streamr](https://streamr.network/) pub-sub network. Providers **don't need to push the data on-chain**, which allows them to provide way **more types of data** with significantly **higher update frequency**
-- End users can receive signed oracle data from the Streamr network and self-deliver it on-chain, attaching it to their transactions
+- End users can receive signed oracles data from the Streamr network and self-deliver it on-chain, attaching it to their transactions
 - On-chain Smart Contracts can verify the data integrity using cryptographic signatures and timestamps
 
 Additionally, RedStone:
@@ -61,7 +61,7 @@ TLDR; You need to do 2 things:
 
 You need to apply a minimum change to the source code to enable smart contract to access data. Your contract needs to extend one of our custom base contracts, which can be found [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/contracts/data-services)
 
-We strongly recommend having some upgradability mechanism for your contracts (it can be based on multisig, DAO, or anything else). This way, you can quickly switch to the latest trusted data providers in case of changes or problems with the current providers.
+We strongly recommend having some upgradeability mechanism for your contracts (it can be based on multisig, DAO, or anything else). This way, you can quickly switch to the latest trusted data providers in case of changes or problems with the current providers.
 
 ```js
 import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
@@ -128,7 +128,7 @@ wrappedContract.executeYourMethod();
 
 #### Mock provider
 
-If you'd like to use the wrapper in a test context, we recommend using a mock wrapper so that you can easily override the oracle values to test different scenarios. To use the mock wrapper just use the `usingMockData(signedDataPackages)` function instead of the `usingDataService` function. You can see examples of the mock wrapper usage [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/test/mock-wrapper)
+If you'd like to use the wrapper in a test context, we recommend using a mock wrapper so that you can easily override the oracles values to test different scenarios. To use the mock wrapper just use the `usingMockData(signedDataPackages)` function instead of the `usingDataService` function. You can see examples of the mock wrapper usage [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/test/mock-wrapper)
 
 You can find more information in the [RedStone documentation](https://docs.redstone.finance/docs/smart-contract-devs/getting-started) to learn how to integrate your zkSync dApp with RedStone oracles.
 
@@ -166,7 +166,7 @@ We use [hardhat](https://hardhat.org/) and [ethers.js](https://docs.ethers.io/v5
 │   ├── components
 │   │   ├── App.tsx             # Main React component
 │   ├── core
-│   │   ├── blockchain.ts       # JS module responsible for interaction with blockchain and contracts
+│   │   ├── blockchain.ts       # TS module responsible for interaction with blockchain and contracts
 │   ├── config/                 # Folder with contract ABIs and deployed contract addresses
 │   └── ...
 ├── test                        # Contract tests
@@ -217,27 +217,7 @@ The implementation is quite straightforward, so we won't describe it here. You c
 #### StableMarketplace.sol
 
 `StableMarketplace` is the marketplace contract with the stable price support. It extends the `Marketplace.sol` implementation and only overrides its `_getPriceFromOrder` function.
-
-```js
-// `_getPriceFromOrder` function uses the `getOracleNumericValueFromTxMsg` function,
-// which fetches signed data from tx calldata and verifies its signature
-function _getPriceFromOrder(SellOrder memory order) internal view override returns (uint256)
-{
-  uint256 ethPrice = getOracleNumericValueFromTxMsg(bytes32("ETH"));
-  return (order.price / ethPrice) * (10 ** 8);
-}
-```
-
-For being able to use RedStone data, the contract extends the `MainDemoConsumerBase.sol` redstone contract.
-
-```js
-import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
-import "./Marketplace.sol";
-
-contract StableMarketplace is Marketplace, MainDemoConsumerBase {
-    ...
-}
-```
+This contract will integrate RedStone oracles functionalities and will be described later.
 
 ### Frontend
 
@@ -245,7 +225,73 @@ You can check the code of the React app in the `src` folder. We tried to simplif
 
 The main UI logic is located in the `App.tsx` file, and the contract interaction logic is in the `blockchain.ts` file.
 
-If you take a look into the `blockchain.ts` file code, you'll notice that each contract call that needs to process RedStone data is made on a contract instance, that was wrapped by [redstone-evm-connector](https://www.npmjs.com/package/redstone-evm-connector).
+If you take a look into the `blockchain.ts` file code, you'll notice that each contract call that needs to process RedStone data is made on a contract instance, that was wrapped by [@redstone-finance/evm-connector](https://www.npmjs.com/package/@redstone-finance/evm-connector).
+
+### Tests
+
+We've used hardhat test framework to contract tests. All the tests are located in the [test](test/) folder.
+
+## 🔥 Tutorial how to integrate RedStone oracles
+
+### Prepare repo
+
+#### 1. Clone this repo
+```sh
+git clone https://github.com/redstone-finance/stable-price-marketplace
+cd stable-price-marketplace
+```
+
+#### 2. Install dependencies
+```sh
+yarn install
+```
+
+#### 3. Run local blockchain node (using hardhat)
+```sh
+yarn run-local-node
+```
+
+### Get familiar with the code
+
+If you are not familiar with the code yet, please read [implementation description](#🧑‍💻-implementation) 
+
+### Integrate with RedStone Oracles
+
+Now it is time to integrate RedStone Oracles into the marketplace. As you maybe noticed some parts of the code are missing the implementation. Let me give you instructions on how to integrate RedStone oracles. 
+
+#### 1. Adjust smart contract
+
+First, we need to modify contracts as currently, they are not ready to receive transactions with RedStone data regarding price. If you are not familiar with our core model please read [how to adjust your smart contracts](#1-adjust-your-smart-contracts). Take a look at the StableMarketplace contract. It is the marketplace contract with stable price support. It extends the `Marketplace.sol` implementation and only overrides its `_getPriceFromOrder` function. The contract should be extended by MainDemoConsumerBase which is imported from [@redstone-finance/evm-connector](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector). The `_getPriceFromOrder` function should use the `getOracleNumericValueFromTxMsg` function to get price data and calculate the final price based on the order price and the price of ETH. Full implementation can be seen below:
+
+```js
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
+import "./Marketplace.sol";
+
+/* 
+  StableMarketplace contract should extend MainDemoConsumerBase contract
+  For being able to use redstone oracles data, more inf:
+  https://docs.redstone.finance/docs/smart-contract-devs/get-started/redstone-core#1-adjust-your-smart-contracts 
+*/
+contract StableMarketplace is Marketplace, MainDemoConsumerBase {
+  /*
+    `_getPriceFromOrder` function should uses the `getOracleNumericValueFromTxMsg` function,
+    which fetches signed data from tx calldata and verifies its signature
+  */ 
+  function _getPriceFromOrder(
+    SellOrder memory order
+  ) internal view override returns (uint256) {
+    uint256 ethPrice = getOracleNumericValueFromTxMsg(bytes32("ETH"));
+    return (order.price / ethPrice) * (10 ** 8);
+  }
+}
+```
+
+#### 2. Adjust TS code of dApp
+
+The second thing to do is adjust the Typescript code of the dApp. Please take a look at the `blockchain.ts` file. Here you can find all functions required to make the marketplace work. But the function `buy` is not implemented. Here we will call the function from the contracts which require price data. To make it possible we need to wrap the contract instance with the [RedStone framework](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector). If you are not familiar with our core model please read how to [adjust Typescript code](#2-adjust-javascript-code-of-your-dapp). After wrapping the contract we will be able to call the `getPrice` function from the `Marketplace` contract which eventually will call overridden `_getPriceFromOrder` from the `StableMarketplace` contract. Now we are able to call the `buy` function from the `Marketplace` contract with the expected ETH amount to buy the NFT. Full implementation can be seen below:
 
 ```js
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
@@ -275,58 +321,33 @@ async function buy(orderId) {
   // Checking expected amount
   const expectedEthAmount = await wrappedMarketplaceContract.getPrice(orderId);
 
-  ...
+  // Sending buy tx
+  const buyTx = await wrappedMarketplaceContract.wi(orderId, {
+    value: expectedEthAmount.mul(101).div(100), // a buffer for price movements
+  });
+  await buyTx.wait();
+
+  return buyTx;
 }
 ```
 
-You can read much more about contract wrapping and `@redstone-finance/evm-connector` [here.](https://www.npmjs.com/package/@redstone-finance/evm-connector)
+### Test dApp locally
 
-### Tests
-
-We've used hardhat test framework to contract tests. All the tests are located in the [test](test/) folder.
-
-💡 Note that each contract function that needs RedStone oracle data is also called on a wrapped ethers contract instance.
-
-```js
-const expectedEthAmount = await wrappedMarketplaceContract.getPrice(orderId);
-```
-
-## 🔥 How to use the app
-
-### Build the app locally
-You can also clone this repo and build the app locally. Please follow the steps below:
-
-#### 1. Clone this repo
-```sh
-git clone https://github.com/redstone-finance/stable-price-marketplace
-cd stable-price-marketplace
-```
-
-#### 2. Install dependencies
-```sh
-yarn install
-```
-
-#### 3. Run local blockchain node (using hardhat)
-```sh
-yarn run-local-node
-```
-
-#### 4. Deploy contracts on local blockchain
+#### 1. Deploy contracts on local blockchain
 ```sh
 yarn deploy-contracts:local
 ```
 
-#### 5. Run react app
+#### 2. Run react app
 ```sh
 yarn app:start
 ```
 
 The app should be running on http://localhost:3000
 
-#### 6. Congifure metamask
+#### 3. Configure metamask
 
-##### 6.1 Add local hardhat network to metamask
+##### 3.1 Add local hardhat network to metamask
 Select `Networks dropdown` -> `Add network` and enter the following details:
 **Network Name**|**hardhat-local**
 :-----:|:-----:
@@ -336,13 +357,13 @@ Currency Symbol|ETH
 
 Then hit the `Save` button.
 
-##### 6.2 Add local wallets to metamask
+##### 3.2 Add local wallets to metamask
 - `User 1`: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 - `User 2`: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d`
 
 You can see more keys in your console below the `yarn run-local-node`
 
-#### 7. Explore the app in browser
+#### 4. Explore the app in browser
 
 <img alt="stable-marketplace-app" src="docs/img/stable-marketplace-app.png" width="800" />
 
@@ -359,7 +380,7 @@ Once you mint any NFTs, you can post sell order for each one of them. Click the 
 ##### Buy NFTs
 You can also switch metamask account and buy the NFT. I would recommend to open the developer tools in browser at the network tab and explore network requests that are being sent before the buy transaction sending.
 
-You should see at least 2 requests with the ETH price data and crypto signatures. This data along with signatures is being attached for each contract call, that wants to process redstone oracle data.
+You should see at least 2 requests with the ETH price data and crypto signatures. This data along with signatures is being attached for each contract call, that wants to process redstone oracles data.
 
 <img alt="redstone-requests" src="docs/img/redstone-requests.png" width="800" />
 
