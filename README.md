@@ -49,7 +49,6 @@ npm install @redstone-finance/evm-connector
 
 ### Usage
 
-
 TLDR; You need to do 2 things:
 
 1. [Adjust your smart contracts](#1-adjust-your-smart-contracts)
@@ -141,12 +140,11 @@ You can find more information in the [RedStone documentation](https://docs.redst
 - [NFT Data Feeds](https://docs.redstone.finance/docs/smart-contract-devs/nft-data-feeds)
 - [Randomness](https://docs.redstone.finance/docs/smart-contract-devs/randomness)
 
-
 ## Example dApp - Stable price NFT marketplace
 
 This repo is designed to show how to build a dApp that uses [RedStone oracles](https://redstone.finance/) on [zkSync](https://zksync.io/).
 
-The repo contains an implementation of an NFT marketplace dApp with so-called "stable" price. It means that sellers can create sell orders (offers), specifying price amount in USD. But buyers are able to pay with native coins, required amount of which is calculated dynamically in the moment of the order execution. Repo lacks few crucial parts which will demonstrate how to integrate RedStone oracles and deploy dApp on zkSync Era Testnet. 
+The repo contains an implementation of an NFT marketplace dApp with so-called "stable" price. It means that sellers can create sell orders (offers), specifying price amount in USD. But buyers are able to pay with native coins, required amount of which is calculated dynamically in the moment of the order execution. Repo lacks few crucial parts which will demonstrate how to integrate RedStone oracles and deploy dApp on zkSync Era Testnet.
 
 ## 🧑‍💻 Implementation
 
@@ -236,28 +234,31 @@ We've used hardhat test framework to contract tests. All the tests are located i
 ### Prepare repo
 
 #### 1. Clone this repo
+
 ```sh
 git clone https://github.com/redstone-finance/stable-price-marketplace
 cd stable-price-marketplace
 ```
 
 #### 2. Install dependencies
+
 ```sh
 yarn install
 ```
 
 #### 3. Run local blockchain node (using hardhat)
+
 ```sh
 yarn run-local-node
 ```
 
 ### Get familiar with the code
 
-If you are not familiar with the code yet, please read [implementation description](#🧑‍💻-implementation) 
+If you are not familiar with the code yet, please read [implementation description](#🧑‍💻-implementation)
 
 ### Integrate with RedStone Oracles
 
-Now it is time to integrate RedStone Oracles into the marketplace. As you maybe noticed some parts of the code are missing the implementation. Let me give you instructions on how to integrate RedStone oracles. 
+Now it is time to integrate RedStone Oracles into the marketplace. As you maybe noticed some parts of the code are missing the implementation. Let me give you instructions on how to integrate RedStone oracles.
 
 #### 1. Adjust smart contract
 
@@ -270,16 +271,16 @@ pragma solidity ^0.8.0;
 import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
 import "./Marketplace.sol";
 
-/* 
+/*
   StableMarketplace contract should extend MainDemoConsumerBase contract
   For being able to use redstone oracles data, more inf:
-  https://docs.redstone.finance/docs/smart-contract-devs/get-started/redstone-core#1-adjust-your-smart-contracts 
+  https://docs.redstone.finance/docs/smart-contract-devs/get-started/redstone-core#1-adjust-your-smart-contracts
 */
 contract StableMarketplace is Marketplace, MainDemoConsumerBase {
   /*
     `_getPriceFromOrder` function should uses the `getOracleNumericValueFromTxMsg` function,
     which fetches signed data from tx calldata and verifies its signature
-  */ 
+  */
   function _getPriceFromOrder(
     SellOrder memory order
   ) internal view override returns (uint256) {
@@ -291,7 +292,7 @@ contract StableMarketplace is Marketplace, MainDemoConsumerBase {
 
 #### 2. Adjust TS code of dApp
 
-The second thing to do is adjust the Typescript code of the dApp. Please take a look at the `blockchain.ts` file. Here you can find all functions required to make the marketplace work. But the function `buy` is not implemented. Here we will call the function from the contracts which require price data. To make it possible we need to wrap the contract instance with the [RedStone framework](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector). If you are not familiar with our core model please read how to [adjust Typescript code](#2-adjust-javascript-code-of-your-dapp). After wrapping the contract we will be able to call the `getPrice` function from the `Marketplace` contract which eventually will call overridden `_getPriceFromOrder` from the `StableMarketplace` contract. Now we are able to call the `buy` function from the `Marketplace` contract with the expected ETH amount to buy the NFT. Full implementation can be seen below:
+The second thing to do is adjust the Typescript code of the dApp. Please take a look at the `blockchain.ts` file. Here you can find all functions required to make the marketplace work. But the function `buy` is not implemented. Here we will call the function from the contracts which require price data. To make it possible we need to wrap the contract instance with the [RedStone framework](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector). If you are not familiar with our core model please read how to [adjust Typescript code](#2-adjust-javascript-code-of-your-dapp). After wrapping the contract we will be able to call the `getPrice` function from the `StableMarketplace` contract which eventually will call overridden `_getPriceFromOrder`. Now we are able to call the `buy` function from the `StableMarketplace` contract with the expected ETH amount to buy the NFT. Full implementation can be seen below:
 
 ```js
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
@@ -334,11 +335,13 @@ async function buy(orderId) {
 ### Test dApp locally
 
 #### 1. Deploy contracts on local blockchain
+
 ```sh
 yarn deploy-contracts:local
 ```
 
 #### 2. Run react app
+
 ```sh
 yarn app:start
 ```
@@ -348,6 +351,7 @@ The app should be running on http://localhost:3000
 #### 3. Configure metamask
 
 ##### 3.1 Add local hardhat network to metamask
+
 Select `Networks dropdown` -> `Add network` and enter the following details:
 **Network Name**|**hardhat-local**
 :-----:|:-----:
@@ -358,6 +362,7 @@ Currency Symbol|ETH
 Then hit the `Save` button.
 
 ##### 3.2 Add local wallets to metamask
+
 - `User 1`: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 - `User 2`: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d`
 
@@ -368,16 +373,19 @@ You can see more keys in your console below the `yarn run-local-node`
 <img alt="stable-marketplace-app" src="docs/img/stable-marketplace-app.png" width="800" />
 
 ##### Mint NFTs
+
 After visiting the app first time you will see an almost empty screen with the `+ Mint new NFT` link. Click this link to mint new NFTs. After the minting transaction confirmation you will see your NFT in the left column.
 
 <img alt="my-nfts" src="docs/img/my-nfts.png" width="300" />
 
 ##### Post sell orders
+
 Once you mint any NFTs, you can post sell order for each one of them. Click the SELL button and provide the USD value. You will be asked to confirm 2 transactions: for NFT transfer approval, and for the marketplace order creation. After their confirmation, you will see your order in the Orders column.
 
 <img alt="orders" src="docs/img/orders.png" width="300" />
 
 ##### Buy NFTs
+
 You can also switch metamask account and buy the NFT. I would recommend to open the developer tools in browser at the network tab and explore network requests that are being sent before the buy transaction sending.
 
 You should see at least 2 requests with the ETH price data and crypto signatures. This data along with signatures is being attached for each contract call, that wants to process redstone oracles data.

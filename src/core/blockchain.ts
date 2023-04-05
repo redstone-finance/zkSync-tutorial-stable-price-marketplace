@@ -5,7 +5,6 @@ import nftAbi from "../config/nft-abi.json";
 import marketplaceAbi from "../config/marketplace-abi.json";
 
 const LOCAL_NETWORK_ID = 1337;
-const ZK_SYNC_ERA_TESTNET_NETWORK_ID = 280;
 
 declare global {
   interface Window {
@@ -143,8 +142,8 @@ async function getChainId() {
   const chainId = network.chainId;
 
   // Check if network is supported
-  if (![LOCAL_NETWORK_ID, ZK_SYNC_ERA_TESTNET_NETWORK_ID].includes(chainId)) {
-    const errText = `Please connect to local network or to zkSync Era Testnet and reload the page`;
+  if (chainId !== LOCAL_NETWORK_ID) {
+    const errText = `Please connect to local network and reload the page`;
     alert(errText);
     throw new Error(errText);
   }

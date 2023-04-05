@@ -1,5 +1,4 @@
 import { HardhatUserConfig } from "hardhat/config";
-import fs from "fs";
 import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
@@ -15,15 +14,5 @@ const config: HardhatUserConfig = {
     },
   },
 };
-
-function tryGetPrivateKeys() {
-  const secretsFilePath = "./.private-keys.json";
-  if (fs.existsSync(secretsFilePath)) {
-    const fileContent = fs.readFileSync(secretsFilePath, "utf-8");
-    return JSON.parse(fileContent);
-  } else {
-    return [];
-  }
-}
 
 export default config;
