@@ -83,7 +83,6 @@ contract Marketplace {
   }
 
   // Getters for the UI
-
   function getPrice(uint256 orderId) public view returns (uint256) {
     SellOrder storage order = sellOrders[orderId];
     return _getPriceFromOrder(order);
