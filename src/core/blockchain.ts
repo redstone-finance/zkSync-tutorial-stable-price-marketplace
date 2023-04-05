@@ -95,7 +95,27 @@ async function cancelOrder(orderId: string) {
 */
 async function buy(orderId: string) {
   const marketplace = await getContractInstance("marketplace");
-  // TO IMPLEMENT
+  const wrappedMarketplaceContract = WrapperBuilder.wrap(
+    marketplace
+  ).usingDataService(
+    {
+      dataServiceId: "redstone-main-demo",
+      uniqueSignersCount: 1,
+      dataFeeds: ["ETH"],
+    },
+    ["https://d33trozg86ya9x.cloudfront.net"]
+  );
+
+  // Checking expected amount
+  const expectedEthAmount = await wrappedMarketplaceContract.getPrice(orderId);
+
+  // Sending buy tx
+  const buyTx = await wrappedMarketplaceContract.buy(orderId, {
+    value: expectedEthAmount.mul(101).div(100), // a buffer for price movements
+  });
+  await buyTx.wait();
+
+  return buyTx;
 }
 
 ///////// STANDARD BLOCKCHAIN UTILS FUNCTIONS /////////
