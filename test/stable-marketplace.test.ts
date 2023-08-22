@@ -1,36 +1,38 @@
-import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BigNumber, Contract } from "ethers";
+import * as hre from "hardhat";
+import { Provider, Wallet } from "zksync-web3";
+import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
+import { BigNumber, Contract, ethers } from "ethers";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Marketplace, ExampleNFT } from "../typechain-types";
+import { expect } from "chai";
+import { DEPLOYER_WALLET_PK, SELLER_RICH_WALLET_PK, BUYER_RICH_WALLET_PK, deployContract } from "./common";
 
 describe("Marketplace core functions test", function () {
-  let marketplaceContract: Marketplace,
-    exampleNFTContract: ExampleNFT,
+  let marketplaceContract: Contract,
+    exampleNFTContract: Contract,
     nftContractAddress: string,
     marketplaceAddress: string,
     wrappedMarketplaceContract: Contract,
-    seller: SignerWithAddress,
-    buyer: SignerWithAddress;
+    seller: Wallet,
+    buyer: Wallet;
 
   const tokenId = 1;
 
   it("Should deploy contracts", async function () {
+    const provider = Provider.getDefaultProvider();
+    const wallet = new Wallet(DEPLOYER_WALLET_PK, provider);
+    const deployer = new Deployer(hre, wallet);
+
     // Deploy marketplace contract
-    const Marketplace = await ethers.getContractFactory("StableMarketplace");
-    marketplaceContract = await Marketplace.deploy();
-    await marketplaceContract.deployed();
+    marketplaceContract = await deployContract(deployer, "StableMarketplace")
     marketplaceAddress = marketplaceContract.address;
 
     // Deploy NFT contract
-    const ExampleNFT = await ethers.getContractFactory("ExampleNFT");
-    exampleNFTContract = await ExampleNFT.deploy();
-    await exampleNFTContract.deployed();
+    exampleNFTContract = await deployContract(deployer, "ExampleNFT")
     nftContractAddress = exampleNFTContract.address;
 
     // Should map users
-    [seller, buyer] = await ethers.getSigners();
+    seller = new Wallet(SELLER_RICH_WALLET_PK, provider);;
+    buyer = new Wallet(BUYER_RICH_WALLET_PK, provider);
   });
 
   it("Should mint NFT", async function () {
@@ -70,7 +72,6 @@ describe("Marketplace core functions test", function () {
         uniqueSignersCount: 1,
         dataFeeds: ["ETH"],
       },
-      ["https://d33trozg86ya9x.cloudfront.net"]
     );
   });
 
@@ -107,7 +108,8 @@ describe("Marketplace core functions test", function () {
     await buyTx.wait();
 
     // Check NFT owner
-    expect(await exampleNFTContract.ownerOf(tokenId)).to.equal(buyer.address);
+    const nftOwner = await exampleNFTContract.ownerOf(tokenId);
+    expect(nftOwner).to.equal(buyer.address);
   });
 });
 

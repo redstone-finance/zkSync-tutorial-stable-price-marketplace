@@ -16,7 +16,7 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ownedNfts, setOwnedNfts] = useState<string[]>([]);
 
-  // On page laod
+  // On page load
   useEffect(() => {
     const onPageLoad = async () => {
       await connectOrUpdateWallet();
@@ -33,13 +33,15 @@ export default function App() {
   async function connectOrUpdateWallet() {
     await blockchain.connectWallet();
     const address = await blockchain.getUserAddress();
-    setAddress(address);
+    setAddress(address ?? null);
   }
 
   async function updateOwnedNfts() {
     const address = await blockchain.getUserAddress();
-    const tokenIds = await blockchain.getOwnedNfts(address);
-    setOwnedNfts(tokenIds.map((tokenId) => tokenId.toNumber()));
+    if (address) {
+      const tokenIds = await blockchain.getOwnedNfts(address);
+      setOwnedNfts(tokenIds?.map((tokenId) => tokenId.toNumber()) ?? []);
+    }
   }
 
   async function updateOrders() {
