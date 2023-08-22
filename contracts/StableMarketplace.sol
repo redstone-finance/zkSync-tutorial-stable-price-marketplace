@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
 import "./Marketplace.sol";

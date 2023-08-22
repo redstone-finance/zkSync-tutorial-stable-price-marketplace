@@ -2,146 +2,6 @@
 
 By the end of this tutorial you will understand how to integrate your dApp built on zkSync with RedStone oracles.
 
-This document will cover:
-
-- What is RedStone?
-- How to use RedStone?
-- Example dApp - Stable price NFT marketplace
-
-## 🚀 What is RedStone?
-
-RedStone is a data ecosystem that delivers frequently updated, reliable and diverse data for your dApps and smart contracts.
-
-It uses a radically different way of putting oracles data on-chain:
-
-- RedStone data providers need to sign provided data and broadcast it using the decentralized [Streamr](https://streamr.network/) pub-sub network. Providers **don't need to push the data on-chain**, which allows them to provide way **more types of data** with significantly **higher update frequency**
-- End users can receive signed oracles data from the Streamr network and self-deliver it on-chain, attaching it to their transactions
-- On-chain Smart Contracts can verify the data integrity using cryptographic signatures and timestamps
-
-Additionally, RedStone:
-
-- Uses token incentives to motivate data providers to maintain data integrity and uninterrupted service
-- Leverages [Arweave blockchain](https://www.arweave.org/) as a cheap and permanent decentralized storage for archiving Oracle data and maintaining data providers' accountability
-
-To learn more about RedStone oracles design check out the [RedStone docs.](https://docs.redstone.finance/docs/introduction)
-
-## 📈 What data is available
-
-Thanks to our innovative architecture, we offer more than one thousand of pricing data feeds, including tokens, stocks, ETFs, commodities, and much more for a fraction of regular Oracles integration costs.
-
-You can check available assets and data providers using [app.redstone.finance.](https://app.redstone.finance/)
-
-## 🔥 How to use RedStone?
-
-**IMPORTANT**: Please reach out to the RedStone team [on Discord](https://redstone.finance/discord) before using RedStone oracles in production dApps. We will be happy to help you with the integration and will set up a new pool of data provider nodes if there is a need.
-
-### Installation
-
-Install [@redstone-finance/evm-connector](https://www.npmjs.com/package/@redstone-finance/evm-connector) from NPM registry
-
-```bash
-# Using yarn
-yarn add @redstone-finance/evm-connector
-
-# Using NPM
-npm install @redstone-finance/evm-connector
-```
-
-### Usage
-
-
-TLDR; You need to do 2 things:
-
-1. [Adjust your smart contracts](#1-adjust-your-smart-contracts)
-2. [Adjust Javascript code of your dApp](#2-adjust-javascript-code-of-your-dapp) (**it is required**, otherwise you will get smart contract errors)
-
-💡 Note: Please don't use Remix to test RedStone oracles, as Remix does not support modifying transactions in the way that the evm-connector does.
-
-### 1. Adjust your smart contracts
-
-You need to apply a minimum change to the source code to enable smart contract to access data. Your contract needs to extend one of our custom base contracts, which can be found [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/contracts/data-services)
-
-We strongly recommend having some upgradeability mechanism for your contracts (it can be based on multisig, DAO, or anything else). This way, you can quickly switch to the latest trusted data providers in case of changes or problems with the current providers.
-
-```js
-import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
-
-contract YourContractName is MainDemoConsumerBase {
-  ...
-}
-```
-
-After applying the mentioned change you will be able to access the data calling the local `getOracleNumericValueFromTxMsg` function. You should pass the data feed id converted to `bytes32`.
-
-```js
-// Getting a single value
-uint256 ethPrice = getOracleNumericValueFromTxMsg(bytes32("ETH"));
-
-// Getting several values
-bytes32[] memory dataFeedIds = new bytes32[](2);
-dataFeedIds[0] = bytes32("ETH");
-dataFeedIds[1] = bytes32("BTC");
-uint256[] memory values = getOracleNumericValuesFromTxMsg(dataFeedIds);
-uint256 ethPrice = values[0];
-uint256 btcPrice = values[1];
-```
-
-You can see all available data feeds [in our web app.](https://app.redstone.finance)
-
-### 2. Adjust Javascript code of your dApp
-
-You should also update the code responsible for submitting transactions. If you're using [ethers.js](https://github.com/ethers-io/ethers.js/), we've prepared a dedicated library to make the transition seamless.
-
-#### Contract object wrapping
-
-First, you need to import the wrapper code to your project
-
-```ts
-// Typescript
-import { WrapperBuilder } from "@redstone-finance/evm-connector";
-
-// Javascript
-const { WrapperBuilder } = require("@redstone-finance/evm-connector");
-```
-
-Then you can wrap your ethers contract pointing to the selected [Redstone data service id.](https://api.redstone.finance/providers) You should also specify a number of unique signers, data feed identifiers, and (optionally) URLs for the redstone cache nodes.
-
-```js
-const yourEthersContract = new ethers.Contract(address, abi, provider);
-
-// Connecting all provider's prices (consumes more GAS)
-const wrappedContract = WrapperBuilder.wrap(contract).usingDataService(
-  {
-    dataServiceId: "redstone-main-demo",
-    uniqueSignersCount: 1,
-    dataFeeds: ["ETH", "BTC"],
-  },
-  ["https://d33trozg86ya9x.cloudfront.net"]
-);
-```
-
-Now you can access any of the contract's methods in exactly the same way as interacting with the ethers-js code:
-
-```js
-wrappedContract.executeYourMethod();
-```
-
-#### Mock provider
-
-If you'd like to use the wrapper in a test context, we recommend using a mock wrapper so that you can easily override the oracles values to test different scenarios. To use the mock wrapper just use the `usingMockData(signedDataPackages)` function instead of the `usingDataService` function. You can see examples of the mock wrapper usage [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/test/mock-wrapper)
-
-You can find more information in the [RedStone documentation](https://docs.redstone.finance/docs/smart-contract-devs/getting-started) to learn how to integrate your zkSync dApp with RedStone oracles.
-
-## 🌎 Useful links
-
-- [Repo with examples](https://github.com/redstone-finance/redstone-evm-examples)
-- [RedStone Documentation](https://docs.redstone.finance/)
-- [RedStone Price Feeds](https://docs.redstone.finance/docs/smart-contract-devs/price-feeds)
-- [Data from any URL](https://docs.redstone.finance/docs/smart-contract-devs/custom-urls)
-- [NFT Data Feeds](https://docs.redstone.finance/docs/smart-contract-devs/nft-data-feeds)
-- [Randomness](https://docs.redstone.finance/docs/smart-contract-devs/randomness)
-
-
 ## Example dApp - Stable price NFT marketplace
 
 This repo is designed to show how to build a dApp that uses [RedStone oracles](https://redstone.finance/) on [zkSync](https://zksync.io/).
@@ -150,7 +10,7 @@ The repo contains an implementation of an NFT marketplace dApp with so-called "s
 
 ## 🧑‍💻 Implementation
 
-We use [hardhat](https://hardhat.org/) and [ethers.js](https://docs.ethers.io/v5/) for deployment scripts and contract tests and [React](https://reactjs.org/) for frontend implementation.
+We use [hardhat](https://hardhat.org/), version prepared for working on [zkSync](https://github.com/matter-labs/hardhat-zksync), and [ethers.js](https://docs.ethers.io/v5/) for deployment scripts and contract tests. Frontend is implemented in [React](https://reactjs.org/).
 
 ### Code structure
 
@@ -161,7 +21,7 @@ We use [hardhat](https://hardhat.org/) and [ethers.js](https://docs.ethers.io/v5
 │   ├── StableMarketplace.sol   # NFT marketplace contract with stable price
 │   └── ...
 ├── public                      # Folder with public html files and images for React app
-├── scripts                     # Contract deployment scripts
+├── deploy                      # Contract deployment script
 ├── src                         # React app source code
 │   ├── components
 │   │   ├── App.tsx             # Main React component
@@ -231,7 +91,7 @@ If you take a look into the `blockchain.ts` file code, you'll notice that each c
 
 We've used hardhat test framework to contract tests. All the tests are located in the [test](test/) folder.
 
-## 🔥 Tutorial how to integrate RedStone oracles
+## 🔥 Tutorial how to integrate RedStone oracles on zkSync
 
 ### Prepare repo
 
@@ -246,10 +106,9 @@ cd stable-price-marketplace
 yarn install
 ```
 
-#### 3. Run local blockchain node (using hardhat)
-```sh
-yarn run-local-node
-```
+#### 3. Run local zkSync node
+
+You can run zkSync node in dockerized setup by following instructions presented [here](https://era.zksync.io/docs/tools/testing/dockerized-testing.html)
 
 ### Get familiar with the code
 
@@ -265,7 +124,7 @@ First, we need to modify contracts as currently, they are not ready to receive t
 
 ```js
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
 import "./Marketplace.sol";
@@ -289,7 +148,7 @@ contract StableMarketplace is Marketplace, MainDemoConsumerBase {
 }
 ```
 
-#### 2. Adjust TS code of dApp
+#### 2. Adjust dApp TypeScript code
 
 The second thing to do is adjust the Typescript code of the dApp. Please take a look at the `blockchain.ts` file. Here you can find all functions required to make the marketplace work. But the function `buy` is not implemented. Here we will call the function from the contracts which require price data. To make it possible we need to wrap the contract instance with the [RedStone framework](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector). If you are not familiar with our core model please read how to [adjust Typescript code](#2-adjust-javascript-code-of-your-dapp). After wrapping the contract we will be able to call the `getPrice` function from the `StableMarketplace` contract which eventually will call overridden `_getPriceFromOrder`. Now we are able to call the `buy` function from the `StableMarketplace` contract with the expected ETH amount to buy the NFT. Full implementation can be seen below:
 
@@ -307,38 +166,52 @@ async function buy(orderId) {
   // Wrapping marketplace contract instance.
   // It enables fetching data from redstone data pool
   // for each contract function call
-  const wrappedMarketplaceContract = WrapperBuilder.wrap(
-    marketplace
-  ).usingDataService(
-    {
-      dataServiceId: "redstone-main-demo",
-      uniqueSignersCount: 1,
-      dataFeeds: ["ETH"],
-    },
-    ["https://d33trozg86ya9x.cloudfront.net"]
-  );
+  try {
+    const wrappedMarketplaceContract = WrapperBuilder.wrap(
+      marketplace
+    ).usingDataService(
+      {
+        dataServiceId: "redstone-main-demo",
+        uniqueSignersCount: 1,
+        dataFeeds: ["ETH"],
+      },
+    );
 
-  // Checking expected amount
-  const expectedEthAmount = await wrappedMarketplaceContract.getPrice(orderId);
+    // Checking expected amount
+    const expectedEthAmount = await wrappedMarketplaceContract.getPrice(orderId);
 
-  // Sending buy tx
-  const buyTx = await wrappedMarketplaceContract.wi(orderId, {
-    value: expectedEthAmount.mul(101).div(100), // a buffer for price movements
-  });
-  await buyTx.wait();
+    // Sending buy tx
+    const buyTx = await wrappedMarketplaceContract.wi(orderId, {
+      value: expectedEthAmount.mul(101).div(100), // a buffer for price movements
+    });
+    await buyTx.wait();
 
-  return buyTx;
+    return buyTx;
+  } catch { 
+    const errText = "Error happened while buying the NFT";
+    alert(errText);
+  }
 }
 ```
 
 ### Test dApp locally
 
-#### 1. Deploy contracts on local blockchain
+#### 1. Check if tests pass
 ```sh
-yarn deploy-contracts:local
+yarn test
+``` 
+
+#### 2. Deploy contracts on local blockchain
+You need to populate .env file with private key for deployment e.g.
+```
+WALLET_TO_DEPLOY_PRIVATE_KEY=0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110
+```
+and then run
+```sh
+yarn deploy
 ```
 
-#### 2. Run react app
+#### 3. Run react app
 ```sh
 yarn app:start
 ```
@@ -351,17 +224,16 @@ The app should be running on http://localhost:3000
 Select `Networks dropdown` -> `Add network` and enter the following details:
 **Network Name**|**hardhat-local**
 :-----:|:-----:
-New RPC URL|http://localhost:8545
-Chain ID|1337
+New RPC URL|http://localhost:3050
+Chain ID|270
 Currency Symbol|ETH
 
 Then hit the `Save` button.
 
 ##### 3.2 Add local wallets to metamask
-- `User 1`: `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
-- `User 2`: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d`
+- `User 1`: `0xac1e735be8536c6534bb4f17f06f6afc73b2b5ba84ac2cfb12f7461b20c0bbe3`
+- `User 2`: `0xd293c684d884d56f8d6abd64fc76757d3664904e309a0645baf8522ab6366d9e`
 
-You can see more keys in your console below the `yarn run-local-node`
 
 #### 4. Explore the app in browser
 
@@ -383,6 +255,142 @@ You can also switch metamask account and buy the NFT. I would recommend to open 
 You should see at least 2 requests with the ETH price data and crypto signatures. This data along with signatures is being attached for each contract call, that wants to process redstone oracles data.
 
 <img alt="redstone-requests" src="docs/img/redstone-requests.png" width="800" />
+
+## 🚀 What is RedStone?
+
+RedStone is a data ecosystem that delivers frequently updated, reliable and diverse data for your dApps and smart contracts.
+
+RedStone offers a radically different design of Oracles catering to the needs of modern DeFi protocols.
+
+- Data providers can avoid the requirement of continuous on-chain data delivery
+- Allow end users to self-deliver signed Oracle data on-chain
+- Use the decentralized Streamr network to deliver signed oracle data to the end users
+- Use token incentives to motivate data providers to maintain data integrity and uninterrupted service
+- Leverage the Arweave blockchain as cheap and permanent storage for archiving Oracle data and maintaining data providers' accountability
+
+To learn more about RedStone oracles design check out the [RedStone docs.](https://docs.redstone.finance/docs/introduction)
+
+## 🗝️ Key facts
+- The [modular architecture](https://docs.redstone.finance/docs/smart-contract-devs/how-it-works#data-flow) maintains [data integrity](https://docs.redstone.finance/docs/smart-contract-devs/how-it-works#data-format) from source to smart contracts
+- There are [3 different ways](https://docs.redstone.finance/docs/smart-contract-devs/how-it-works#3-ways-to-integrate) to integrate our service tailored to your needs
+- We provide feeds for more than [1000 assets](https://app.redstone.finance/#/app/tokens) integrating [~50 data sources](https://app.redstone.finance/#/app/sources)
+- We are present on [20+ chains](https://showroom.redstone.finance/)
+- RedStone has been live on mainnets since March 2022 with no downtime. Code was audited by ABDK, Packshield and L2Beat Co-Founder.
+- RedStone was a launch partner for [DeltaPrime](https://deltaprime.io/) on Avalanche and delivered data feeds not available anywhere else. Thanks to that DeltaPrime became the top 3 fastest growing dApps according to DefiLama.
+
+## 📈 What data is available
+
+Thanks to our innovative architecture, we offer more than one thousand of pricing data feeds, including tokens, stocks, ETFs, commodities, and much more for a fraction of regular Oracles integration costs.
+
+You can check available assets and data providers using [app.redstone.finance.](https://app.redstone.finance/)
+
+## 🔥 How to use RedStone?
+
+**IMPORTANT**: Please reach out to the RedStone team [on Discord](https://redstone.finance/discord) before using RedStone oracles in production dApps. We will be happy to help you with the integration and will set up a new pool of data provider nodes if there is a need.
+
+### Installation
+
+Install [@redstone-finance/evm-connector](https://www.npmjs.com/package/@redstone-finance/evm-connector) from NPM registry
+
+```bash
+# Using yarn
+yarn add @redstone-finance/evm-connector
+
+# Using NPM
+npm install @redstone-finance/evm-connector
+```
+
+### Usage
+
+TLDR; You need to do 2 things:
+
+1. [Adjust your smart contracts](#1-adjust-your-smart-contracts)
+2. [Adjust Javascript code of your dApp](#2-adjust-javascript-code-of-your-dapp) (**it is required**, otherwise you will get smart contract errors)
+
+💡 Note: Please don't use Remix to test RedStone oracles, as Remix does not support modifying transactions in the way that the evm-connector does.
+
+### 1. Adjust your smart contracts
+
+You need to apply a minimum change to the source code to enable smart contract to access data. Your contract needs to extend one of our custom base contracts, which can be found [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/contracts/data-services)
+
+We strongly recommend having some upgradeability mechanism for your contracts (it can be based on multisig, DAO, or anything else). This way, you can quickly switch to the latest trusted data providers in case of changes or problems with the current providers.
+
+```js
+import "@redstone-finance/evm-connector/contracts/data-services/MainDemoConsumerBase.sol";
+
+contract YourContractName is MainDemoConsumerBase {
+  ...
+}
+```
+
+After applying the mentioned change you will be able to access the data calling the local `getOracleNumericValueFromTxMsg` function. You should pass the data feed id converted to `bytes32`.
+
+```js
+// Getting a single value
+uint256 ethPrice = getOracleNumericValueFromTxMsg(bytes32("ETH"));
+
+// Getting several values
+bytes32[] memory dataFeedIds = new bytes32[](2);
+dataFeedIds[0] = bytes32("ETH");
+dataFeedIds[1] = bytes32("BTC");
+uint256[] memory values = getOracleNumericValuesFromTxMsg(dataFeedIds);
+uint256 ethPrice = values[0];
+uint256 btcPrice = values[1];
+```
+
+You can see all available data feeds [in our web app.](https://app.redstone.finance)
+
+### 2. Adjust Javascript code of your dApp
+
+You should also update the code responsible for submitting transactions. If you're using [ethers.js](https://github.com/ethers-io/ethers.js/), we've prepared a dedicated library to make the transition seamless.
+
+#### Contract object wrapping
+
+First, you need to import the wrapper code to your project
+
+```ts
+// Typescript
+import { WrapperBuilder } from "@redstone-finance/evm-connector";
+
+// Javascript
+const { WrapperBuilder } = require("@redstone-finance/evm-connector");
+```
+
+Then you can wrap your ethers contract pointing to the selected [Redstone data service id.](https://api.redstone.finance/providers) You should also specify a number of unique signers, data feed identifiers, and (optionally) URLs for the redstone cache nodes.
+
+```js
+const yourEthersContract = new ethers.Contract(address, abi, provider);
+
+// Connecting all provider's prices (consumes more GAS)
+const wrappedContract = WrapperBuilder.wrap(contract).usingDataService(
+  {
+    dataServiceId: "redstone-main-demo",
+    uniqueSignersCount: 1,
+    dataFeeds: ["ETH", "BTC"],
+  },
+);
+```
+
+Now you can access any of the contract's methods in exactly the same way as interacting with the ethers-js code:
+
+```js
+wrappedContract.executeYourMethod();
+```
+
+#### Mock provider
+
+If you'd like to use the wrapper in a test context, we recommend using a mock wrapper so that you can easily override the oracles values to test different scenarios. To use the mock wrapper just use the `usingMockData(signedDataPackages)` function instead of the `usingDataService` function. You can see examples of the mock wrapper usage [here.](https://github.com/redstone-finance/redstone-oracles-monorepo/tree/main/packages/evm-connector/test/mock-wrapper)
+
+You can find more information in the [RedStone documentation](https://docs.redstone.finance/docs/smart-contract-devs/getting-started) to learn how to integrate your zkSync dApp with RedStone oracles.
+
+## 🌎 Useful links
+
+- [Repo with examples](https://github.com/redstone-finance/redstone-evm-examples)
+- [RedStone Documentation](https://docs.redstone.finance/)
+- [RedStone Price Feeds](https://docs.redstone.finance/docs/smart-contract-devs/price-feeds)
+- [Data from any URL](https://docs.redstone.finance/docs/smart-contract-devs/custom-urls)
+- [NFT Data Feeds](https://docs.redstone.finance/docs/smart-contract-devs/nft-data-feeds)
+- [Randomness](https://docs.redstone.finance/docs/smart-contract-devs/randomness)
 
 ## 🙋‍♂️ Need help?
 

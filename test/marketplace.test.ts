@@ -1,34 +1,36 @@
+import * as hre from "hardhat";
+import { Contract, Provider, Wallet } from "zksync-web3";
+import { Deployer } from "@matterlabs/hardhat-zksync-deploy";
+import { BigNumber, ethers } from "ethers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ExampleNFT, Marketplace } from "../typechain-types";
+import { DEPLOYER_WALLET_PK, SELLER_RICH_WALLET_PK, BUYER_RICH_WALLET_PK, deployContract } from "./common";
 
 describe("Marketplace core functions test", function () {
-  let marketplaceContract: Marketplace,
-    exampleNFTContract: ExampleNFT,
+  let marketplaceContract: Contract,
+    exampleNFTContract: Contract,
     nftContractAddress: string,
     marketplaceAddress: string,
-    seller: SignerWithAddress,
-    buyer: SignerWithAddress;
+    seller: Wallet,
+    buyer: Wallet;
 
   const tokenId = 1;
 
   it("Should deploy contracts", async function () {
+    const provider = Provider.getDefaultProvider();
+    const wallet = new Wallet(DEPLOYER_WALLET_PK, provider);
+    const deployer = new Deployer(hre, wallet);
+
     // Deploy marketplace contract
-    const Marketplace = await ethers.getContractFactory("Marketplace");
-    marketplaceContract = await Marketplace.deploy();
-    await marketplaceContract.deployed();
+    marketplaceContract = await deployContract(deployer, "Marketplace")
     marketplaceAddress = marketplaceContract.address;
 
     // Deploy NFT contract
-    const ExampleNFT = await ethers.getContractFactory("ExampleNFT");
-    exampleNFTContract = await ExampleNFT.deploy();
-    await exampleNFTContract.deployed();
+    exampleNFTContract = await deployContract(deployer, "ExampleNFT")
     nftContractAddress = exampleNFTContract.address;
 
     // Should map users
-    [seller, buyer] = await ethers.getSigners();
+    seller = new Wallet(SELLER_RICH_WALLET_PK, provider);;
+    buyer = new Wallet(BUYER_RICH_WALLET_PK, provider);
   });
 
   it("Should mint NFT", async function () {
@@ -63,7 +65,7 @@ describe("Marketplace core functions test", function () {
   it("Should get all orders", async function () {
     const allOrders = await marketplaceContract.getAllOrders();
     expect(allOrders.length).to.equal(1);
-    expect(allOrders[0].tokenId).to.equal(1);
+    expect(allOrders[0].tokenId.toString()).to.equal("1");
   });
 
   it("Buying should fail with smaller amount then seller requested", async function () {
@@ -94,7 +96,8 @@ describe("Marketplace core functions test", function () {
     await buyTx.wait();
 
     // Check NFT owner
-    expect(await exampleNFTContract.ownerOf(tokenId)).to.equal(buyer.address);
+    const nftOwner = await exampleNFTContract.ownerOf(tokenId);
+    expect(nftOwner).to.equal(buyer.address);
   });
 
   it("Should post and cancel order", async function () {

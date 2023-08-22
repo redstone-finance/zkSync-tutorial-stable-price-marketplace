@@ -118,3 +118,7 @@ artifacts
 .vercel
 
 typechain-types
+
+# zksync artifacts
+artifacts-zk
+cache-zk
