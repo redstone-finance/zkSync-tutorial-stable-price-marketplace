@@ -40,7 +40,7 @@ export default function App() {
     const address = await blockchain.getUserAddress();
     if (address) {
       const tokenIds = await blockchain.getOwnedNfts(address);
-      setOwnedNfts(tokenIds?.map((tokenId) => tokenId.toNumber()) ?? []);
+      setOwnedNfts((tokenIds ?? []).map((tokenId) => tokenId.toNumber()));
     }
   }
 
@@ -97,7 +97,7 @@ export default function App() {
         <div id="nft-secion">
           <h2>My tokens</h2>
           <div className="cards-container">
-            {ownedNfts.map((tokenId) => (
+            {(ownedNfts ?? []).map((tokenId) => (
               <Card
                 key={tokenId}
                 tokenId={tokenId}
@@ -118,7 +118,7 @@ export default function App() {
         <div id="orders-section">
           <h2>Orders</h2>
           <div className="cards-container">
-            {orders.map((order) => {
+            {(orders ?? []).map((order) => {
               const buttonDetails = getOrderButtonDetails(order);
               return (
                 <Card

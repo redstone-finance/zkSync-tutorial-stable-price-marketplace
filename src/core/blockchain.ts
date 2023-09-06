@@ -1,5 +1,6 @@
+import { Web3Provider, Contract } from "zksync-web3";
 import { WrapperBuilder } from "@redstone-finance/evm-connector";
-import { ethers, utils } from "ethers";
+import { utils } from "ethers";
 import localAddresses from "../config/zkSyncTestnet-addresses.json";
 import nftAbi from "../config/nft-abi.json";
 import marketplaceAbi from "../config/marketplace-abi.json";
@@ -57,7 +58,7 @@ async function getAllOrders() {
   try {
     const marketplace = await getContractInstance("marketplace");
     const orders = await marketplace.getAllOrders();
-    return orders
+    return (orders ?? [])
       .map((order: OrdersFromContract, index: number) => ({
         orderId: index,
         tokenId: order.tokenId.toNumber(),
@@ -172,7 +173,7 @@ async function connectWallet() {
 
 async function getSigner() {
   await connectWallet();
-  const signer = new ethers.providers.Web3Provider(window.ethereum).getSigner();
+  const signer = new Web3Provider(window.ethereum).getSigner();
   return signer;
 }
 
@@ -180,7 +181,7 @@ async function getContractInstance(contractName: "nft" | "marketplace") {
   const abi = ABIs[contractName];
   const address = await getContractAddress(contractName);
   const signer = await getSigner();
-  return new ethers.Contract(address, abi, signer);
+  return new Contract(address, abi, signer);
 }
 
 async function getContractAddress(contractName: "nft" | "marketplace") {
@@ -188,7 +189,7 @@ async function getContractAddress(contractName: "nft" | "marketplace") {
 }
 
 async function getChainId() {
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  const provider = new Web3Provider(window.ethereum);
   const network = await provider.getNetwork();
 
   const chainId = network.chainId;
