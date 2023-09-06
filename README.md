@@ -204,7 +204,7 @@ yarn test
 #### 2. Deploy contracts on local blockchain
 You need to populate .env file with private key for deployment e.g.
 ```
-WALLET_TO_DEPLOY_PRIVATE_KEY=0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110
+WALLET_PRIVATE_KEY=0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110
 ```
 and then run
 ```sh
