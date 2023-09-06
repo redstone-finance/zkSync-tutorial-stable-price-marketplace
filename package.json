@@ -11,6 +11,7 @@
     "app:build": "GENERATE_SOURCEMAP=false react-scripts build",
     "app:eject": "react-scripts eject",
     "test": "NODE_ENV=test hardhat test --network zkSyncTestnet",
+    "deploy:local": "NODE_ENV=test hardhat deploy-zksync --script deploy.ts",
     "deploy": "yarn hardhat deploy-zksync --script deploy.ts"
   },
   "dependencies": {

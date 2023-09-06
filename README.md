@@ -201,17 +201,22 @@ async function buy(orderId) {
 yarn test
 ``` 
 
-#### 2. Deploy contracts on local blockchain
+#### 2. Compile contracts
+```sh
+yarn compile
+``` 
+
+#### 3. Deploy contracts on local blockchain
 You need to populate .env file with private key for deployment e.g.
 ```
 WALLET_PRIVATE_KEY=0x7726827caac94a7f9e1b160f7ea819f172f7b6f9d2a97f992c38edeab82d4110
 ```
 and then run
 ```sh
-yarn deploy
+yarn deploy:local
 ```
 
-#### 3. Run react app
+#### 4. Run react app
 ```sh
 yarn app:start
 ```
